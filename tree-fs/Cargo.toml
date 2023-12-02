@@ -1,0 +1,25 @@
+[package]
+name = "tree-fs"
+version = "0.1.0"
+edition = "2021"
+
+description = ""
+authors = ["Elad Kaplan <kaplan.elad@gmail.com>"]
+documentation = ""
+repository = "https://github.com/kaplanelad/tree-fs"
+keywords = ["filesystem", "folders", "test", "assert"]
+license = "Apache-2.0"
+readme = "../README.md"
+
+[features]
+default = ["yaml"]
+
+yaml = ["dep:serde_yaml", "dep:thiserror"]
+
+[dependencies]
+serde = { version = "1.0.193", features = ["derive"] }
+serde_yaml = { version = "0.9.27", optional = true }
+thiserror = { version = "1.0.50", optional = true }
+rand = { version = "0.8.5" }
+
+[dev-dependencies]

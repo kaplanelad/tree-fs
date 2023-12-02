@@ -3,7 +3,7 @@ name = "tree-fs"
 version = "0.1.0"
 edition = "2021"
 
-description = ""
+description = "Provides a convenient way to create a tree of files"
 authors = ["Elad Kaplan <kaplan.elad@gmail.com>"]
 documentation = ""
 repository = "https://github.com/kaplanelad/tree-fs"

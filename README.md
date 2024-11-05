@@ -1,3 +1,6 @@
+[![crate](https://img.shields.io/crates/v/tree-fs.svg)](https://crates.io/crates/tree-fs)
+[![docs](https://docs.rs/tree-fs/badge.svg)](https://docs.rs/tree-fs)
+
 # tree-fs
 
 Oftentimes, testing scenarios involve interactions with the file system. `tree-fs` provides a convenient solution for creating file system trees tailored to the needs of your tests. This library offers:

@@ -10,14 +10,7 @@ fn main() {
               foo: bar
     "#;
 
-    let res = tree_fs::from_yaml_str(content);
+    let tree_fs = tree_fs::from_yaml_str(content).expect("create tree fs");
 
-    match res {
-        Ok(res) => {
-            println!("created successfully in {}", res.display());
-        }
-        Err(err) => {
-            println!("creating tree files finish with errors: {err}");
-        }
-    }
+    println!("created successfully in {}", tree_fs.root.display());
 }

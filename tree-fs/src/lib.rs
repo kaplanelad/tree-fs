@@ -1,30 +1,4 @@
-//! # tree-fs
-//!
-//! Oftentimes, testing scenarios involve interactions with the file system. `tree-fs` provides a convenient solution for creating file system trees tailored to the needs of your tests. This library offers:
-//!
-//! - An easy way to generate a tree with recursive paths.
-//! - Tree creation within a temporary folder.
-//! - The ability to create a tree using either YAML or a builder.
-//!
-//! ## Example
-//!
-//! From builder
-//! ```rust
-#![doc = include_str!("../examples/builder.rs")]
-//! ```
-//!
-//!
-//! Using a YAML File
-//! ```rust
-#![doc = include_str!("../examples/yaml-file.rs")]
-//! ```
-//!
-//!
-//! Using a YAML String
-//! ```rust
-#![doc = include_str!("../examples/yaml-str.rs")]
-//! ```
-//!
+#![doc = include_str!("../../README.md")]
 
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;
@@ -52,12 +26,58 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct Tree {
     /// Root folder where the tree will be created.
     #[serde(default = "temp_dir")]
-    pub root_folder: PathBuf,
+    pub root: PathBuf,
+    #[serde(default)]
+    drop: bool,
+}
+
+/// Represents a file tree structure
+///
+/// # Examples
+///
+/// ```rust
+// <snip id="example-builder">
+/// use tree_fs::TreeBuilder;
+/// let tree_fs = TreeBuilder::default()
+///     .add("test/foo.txt", "bar")
+///     .add_empty("test/folder-a/folder-b/bar.txt")
+///     .create()
+///     .expect("create tree fs");
+/// println!("created successfully in {}", tree_fs.root.display());
+// </snip>
+/// ```
+///
+/// ```rust
+// <snip id="example-drop">
+/// use tree_fs::TreeBuilder;
+/// let tree_fs = TreeBuilder::default()
+///      .add("test/foo.txt", "bar")
+///      .add_empty("test/folder-a/folder-b/bar.txt")
+///      .drop(true)
+///      .create()
+///      .expect("create tree fs");
+///
+/// println!("created successfully in {}", tree_fs.root.display());
+///
+/// let path = tree_fs.root.clone();
+/// assert!(path.exists());
+///
+/// drop(tree_fs);
+/// assert!(!path.exists());
+// </snip>
+/// ```
+#[derive(Debug, Deserialize)]
+pub struct TreeBuilder {
+    /// Root folder where the tree will be created.
+    #[serde(default = "temp_dir")]
+    pub root: PathBuf,
     /// Flag indicating whether existing files should be overridden.
     #[serde(default)]
-    pub override_file: bool,
+    override_file: bool,
     /// List of file metadata entries in the tree.
-    pub files: Vec<FileMetadata>,
+    files: Vec<FileMetadata>,
+    #[serde(default)]
+    drop: bool,
 }
 
 /// Represents metadata for a file in the tree.
@@ -69,22 +89,38 @@ pub struct FileMetadata {
     pub content: Option<String>,
 }
 
-impl Default for Tree {
+impl Default for TreeBuilder {
     /// Creates a default `Tree` instance with an empty file list,
     fn default() -> Self {
         Self {
             files: vec![],
             override_file: false,
-            root_folder: temp_dir(),
+            root: temp_dir(),
+            drop: false,
         }
     }
 }
 
-impl Tree {
+impl Drop for Tree {
+    fn drop(&mut self) {
+        if self.drop {
+            let _ = std::fs::remove_dir_all(&self.root);
+        }
+    }
+}
+
+impl TreeBuilder {
     /// Sets the root folder where the tree will be created.
     #[must_use]
     pub fn root_folder<P: AsRef<Path>>(mut self, dir: P) -> Self {
-        self.root_folder = dir.as_ref().to_path_buf();
+        self.root = dir.as_ref().to_path_buf();
+        self
+    }
+
+    /// Sets the `override_file` flag, indicating whether existing files should be overridden.
+    #[must_use]
+    pub const fn drop(mut self, yes: bool) -> Self {
+        self.drop = yes;
         self
     }
 
@@ -120,9 +156,9 @@ impl Tree {
     /// # Errors
     ///
     /// Returns an `std::io::Result` indicating success or failure in creating the file tree.
-    pub fn create(&self) -> std::io::Result<PathBuf> {
+    pub fn create(&self) -> std::io::Result<Tree> {
         for file in &self.files {
-            let dest_file = self.root_folder.join(&file.path);
+            let dest_file = self.root.join(&file.path);
             if !self.override_file && dest_file.exists() {
                 continue;
             }
@@ -136,32 +172,68 @@ impl Tree {
                 new_file.write_all(content.as_bytes())?;
             }
         }
-        Ok(self.root_folder.clone())
+
+        Ok(Tree {
+            root: self.root.clone(),
+            drop: self.drop,
+        })
     }
 }
 
 #[cfg(feature = "yaml")]
 /// Creates a file tree based on the content of a YAML file.
 ///
+/// # Examples
+///
+/// ```rust
+// <snip id="example-from-yaml-file">
+/// use std::path::PathBuf;
+/// let yaml_path = PathBuf::from("tests/fixtures/tree.yaml");
+/// let tree_fs = tree_fs::from_yaml_file(&yaml_path).expect("create tree fs");
+/// assert!(tree_fs.root.exists())
+// </snip>
+/// ```
+///
 /// # Errors
 ///
 /// Returns a `Result` containing the path to the root folder of the generated file tree on success,
 /// or an error if the operation fails.
-pub fn from_yaml_file(path: &PathBuf) -> Result<PathBuf> {
+pub fn from_yaml_file(path: &PathBuf) -> Result<Tree> {
     let f = std::fs::File::open(path)?;
-    let tree: Tree = serde_yaml::from_reader(f)?;
-    Ok(tree.create()?)
+    let tree_builder: TreeBuilder = serde_yaml::from_reader(f)?;
+    Ok(tree_builder.create()?)
 }
 
 #[cfg(feature = "yaml")]
 /// Creates a file tree based on a YAML-formatted string.
 ///
+/// # Examples
+///
+/// ```rust
+// <snip id="example-from-yaml-str">
+/// let content = r#"
+/// override_file: false
+/// files:
+///   - path: foo.json
+///     content: |
+///       { "foo;": "bar" }
+///   - path: folder/bar.yaml
+///     content: |
+///       foo: bar
+///     "#;
+///
+/// let tree_fs = tree_fs::from_yaml_str(content).expect("create tree fs");
+/// assert!(tree_fs.root.exists())
+// </snip>
+///
+/// ```
+///
 /// # Errors
 /// Returns a `Result` containing the path to the root folder of the generated file tree on success,
 /// or an error if the operation fails.
-pub fn from_yaml_str(content: &str) -> Result<PathBuf> {
-    let tree: Tree = serde_yaml::from_str(content)?;
-    Ok(tree.create()?)
+pub fn from_yaml_str(content: &str) -> Result<Tree> {
+    let tree_builder: TreeBuilder = serde_yaml::from_str(content)?;
+    Ok(tree_builder.create()?)
 }
 
 fn temp_dir() -> PathBuf {

@@ -1,4 +1,4 @@
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use serde::Deserialize;

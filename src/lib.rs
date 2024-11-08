@@ -157,6 +157,9 @@ impl TreeBuilder {
     ///
     /// Returns an `std::io::Result` indicating success or failure in creating the file tree.
     pub fn create(&self) -> std::io::Result<Tree> {
+        if !self.root.exists() {
+            std::fs::create_dir_all(&self.root)?;
+        }
         for file in &self.files {
             let dest_file = self.root.join(&file.path);
             if !self.override_file && dest_file.exists() {

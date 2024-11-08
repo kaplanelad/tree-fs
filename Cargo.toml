@@ -1,6 +1,6 @@
 [package]
 name = "tree-fs"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Provides a convenient way to create a tree of files"
 authors = ["Elad Kaplan <kaplan.elad@gmail.com>"]

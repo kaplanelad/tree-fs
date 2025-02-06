@@ -117,7 +117,7 @@ impl TreeBuilder {
         self
     }
 
-    /// Sets the `override_file` flag, indicating whether existing files should be overridden.
+    /// Sets the `drop` flag, indicating whether to automatically delete the temporary folder when the `tree_fs` instance is dropped
     #[must_use]
     pub const fn drop(mut self, yes: bool) -> Self {
         self.drop = yes;

@@ -1,11 +1,13 @@
 #![doc = include_str!("../README.md")]
 
+use std::{
+    env,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
+
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use std::env;
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::path::PathBuf;
 
 /// Represents a file tree structure
 #[derive(Debug)]
@@ -35,7 +37,6 @@ impl Tree {
 /// println!("created successfully in {}", tree_fs.root().display());
 // </snip>
 /// ```
-///
 /// ```rust
 // <snip id="example-drop">
 /// use tree_fs::TreeBuilder;
@@ -110,14 +111,16 @@ impl TreeBuilder {
         self
     }
 
-    /// Sets the `drop` flag, indicating whether to automatically delete the temporary folder when the `tree_fs` instance is dropped
+    /// Sets the `drop` flag, indicating whether to automatically delete the
+    /// temporary folder when the `tree_fs` instance is dropped
     #[must_use]
     pub const fn drop(mut self, yes: bool) -> Self {
         self.drop = yes;
         self
     }
 
-    /// Sets the `override_file` flag, indicating whether existing files should be overridden.
+    /// Sets the `override_file` flag, indicating whether existing files should
+    /// be overridden.
     #[must_use]
     pub const fn override_file(mut self, yes: bool) -> Self {
         self.override_file = yes;
@@ -152,11 +155,13 @@ impl TreeBuilder {
         self.add(path, Content::File(file.as_ref().to_path_buf()))
     }
 
-    /// Creates the file tree by generating files and directories based on the specified metadata.
+    /// Creates the file tree by generating files and directories based on the
+    /// specified metadata.
     ///
     /// # Errors
     ///
-    /// Returns an `std::io::Result` indicating success or failure in creating the file tree.
+    /// Returns an `std::io::Result` indicating success or failure in creating
+    /// the file tree.
     pub fn create(&self) -> std::io::Result<Tree> {
         if !self.root.exists() {
             std::fs::create_dir_all(&self.root)?;
@@ -196,18 +201,17 @@ impl TreeBuilder {
 fn random_temp_directory() -> PathBuf {
     loop {
         let random_string: String = thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(5)
-        .map(char::from)
-        .collect();
+            .sample_iter(&Alphanumeric)
+            .take(5)
+            .map(char::from)
+            .collect();
 
         let path = env::temp_dir().join(random_string);
 
         if !path.exists() {
-            return path
+            return path;
         }
     }
-    
 }
 
 #[cfg(test)]

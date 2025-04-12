@@ -88,7 +88,7 @@ impl Default for TreeBuilder {
         Self {
             files: vec![],
             override_file: false,
-            root: temp_dir(),
+            root: random_temp_directory(),
             drop: true,
         }
     }
@@ -193,14 +193,21 @@ impl TreeBuilder {
     }
 }
 
-fn temp_dir() -> PathBuf {
-    let random_string: String = thread_rng()
+fn random_temp_directory() -> PathBuf {
+    loop {
+        let random_string: String = thread_rng()
         .sample_iter(&Alphanumeric)
         .take(5)
         .map(char::from)
         .collect();
 
-    env::temp_dir().join(random_string)
+        let path = env::temp_dir().join(random_string);
+
+        if !path.exists() {
+            return path
+        }
+    }
+    
 }
 
 #[cfg(test)]

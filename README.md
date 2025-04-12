@@ -16,6 +16,7 @@ When the `tree_fs` instance is dropped, the temporary folder and its contents ar
 use temp_dir_builder::TempDirectoryBuilder;
 let temp_dir = TempDirectoryBuilder::default()
     .add_text_file("test/foo.txt", "bar")
+    .add_binary_file("test/foo2.txt", &[98u8, 97u8, 114u8])
     .add_empty_file("test/folder-a/folder-b/bar.txt")
     .add_file("test/file.rs", file!())
     .add_directory("test/dir")

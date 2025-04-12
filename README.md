@@ -1,6 +1,6 @@
-# tree-fs
+# temp-dir-builder
 
-Oftentimes, testing scenarios involve interactions with the file system. `tree-fs` provides a convenient solution for creating file system trees tailored to the needs of your tests. This library offers:
+Oftentimes, testing scenarios involve interactions with the file system. `temp-dir-builder` provides a convenient solution for creating file system trees tailored to the needs of your tests. This library offers:
 
 - An easy way to generate a tree with recursive paths.
 - Tree creation within a temporary folder.
@@ -13,13 +13,17 @@ When the `tree_fs` instance is dropped, the temporary folder and its contents ar
 
 <!-- <snip id="example-builder" inject_from="code" strip_prefix="/// " template="rust"> -->
 ```rust
-use tree_fs::TreeBuilder;
-let tree_fs = TreeBuilder::default()
-    .add_text("test/foo.txt", "bar")
-    .add_empty("test/folder-a/folder-b/bar.txt")
+use temp_dir_builder::TempDirectoryBuilder;
+let temp_dir = TempDirectoryBuilder::default()
+    .add_text_file("test/foo.txt", "bar")
+    .add_empty_file("test/folder-a/folder-b/bar.txt")
     .add_file("test/file.rs", file!())
+    .add_directory("test/dir")
     .create()
-    .expect("create tree fs");
-println!("created successfully in {}", tree_fs.root().display());
+    .expect("create temp dir");
+println!("created successfully in {}", temp_dir.path().display());
 ```
 <!-- </snip> -->
+
+## Credits
+This is a fork of [tree-fs](https://github.com/kaplanelad/tree-fs) I heavily rewritten, original idea from Elad Kaplan.

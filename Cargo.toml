@@ -1,14 +1,15 @@
 [package]
-name = "tree-fs"
-version = "0.3.0"
+name = "temp-dir-builder"
+version = "0.1.0"
 edition = "2021"
-description = "Provides a convenient way to create a tree of files"
+description = "Provides a convenient way to create a temporary directory containing files"
 authors = ["Elad Kaplan <kaplan.elad@gmail.com>", "Iohann Rabeson"]
-keywords = ["filesystem", "folders", "test", "assert"]
+keywords = ["filesystem", "folders", "test"]
 license = "Apache-2.0"
 readme = "README.md"
 
 [dependencies]
 rand = { version = "0.8.5" }
+thiserror = "2.0.12"
 
 [dev-dependencies]

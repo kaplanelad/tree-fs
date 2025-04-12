@@ -1,8 +1,0 @@
-override_file: false
-files:
-  - path: foo.json
-    content: |
-      { "foo": "bar" }
-  - path: folder/bar.yaml
-    content: |
-      foo: bar

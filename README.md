@@ -18,11 +18,12 @@ With the builder API, you can define file paths and contents in a structured way
 ```rust
 use tree_fs::TreeBuilder;
 let tree_fs = TreeBuilder::default()
-    .add("test/foo.txt", "bar")
+    .add_text("test/foo.txt", "bar")
     .add_empty("test/folder-a/folder-b/bar.txt")
+    .add_file("destination.rs", file!())
     .create()
     .expect("create tree fs");
-println!("created successfully in {}", tree_fs.root.display());
+println!("created successfully in {}", tree_fs.root().display());
 ```
 <!-- </snip> -->
 
@@ -33,52 +34,18 @@ When the `tree_fs` instance is dropped, the temporary folder and its contents ar
 ```rust
  use tree_fs::TreeBuilder;
  let tree_fs = TreeBuilder::default()
-      .add("test/foo.txt", "bar")
+      .add_text("test/foo.txt", "bar")
       .add_empty("test/folder-a/folder-b/bar.txt")
       .drop(true)
       .create()
       .expect("create tree fs");
 
- println!("created successfully in {}", tree_fs.root.display());
+ println!("created successfully in {}", tree_fs.root().display());
 
- let path = tree_fs.root.clone();
+ let path = tree_fs.root().to_path_buf();
  assert!(path.exists());
 
  drop(tree_fs);
  assert!(!path.exists());
-```
-<!-- </snip> -->
-
-### Using a YAML File
-You can define your file tree structure in a YAML file, which is then loaded and created by `tree-fs`. This method is great for more complex, predefined directory structures.
-
-
-<!-- <snip id="example-from-yaml-file" inject_from="code" strip_prefix="/// " template="rust"> -->
-```rust
-use std::path::PathBuf;
-let yaml_path = PathBuf::from("tests/fixtures/tree.yaml");
-let tree_fs = tree_fs::from_yaml_file(&yaml_path).expect("create tree fs");
-assert!(tree_fs.root.exists())
-```
-<!-- </snip> -->
-
-### Using a YAML String
-Alternatively, you can provide the YAML content as a string, which is particularly useful for inline definitions within test code.
-
-<!-- <snip id="example-from-yaml-str" inject_from="code" strip_prefix="/// " template="rust"> -->
-```rust
-let content = r#"
-override_file: false
-files:
-  - path: foo.json
-    content: |
-      { "foo;": "bar" }
-  - path: folder/bar.yaml
-    content: |
-      foo: bar
-    "#;
-///
-let tree_fs = tree_fs::from_yaml_str(content).expect("create tree fs");
-assert!(tree_fs.root.exists())
 ```
 <!-- </snip> -->

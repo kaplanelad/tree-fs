@@ -7,5 +7,5 @@ fn main() {
         .create()
         .expect("create tree fs");
 
-    println!("created successfully in {}", tree_fs.root.display());
+    println!("created successfully in {}", tree_fs.root().display());
 }

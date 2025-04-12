@@ -55,6 +55,7 @@ pub enum CreateError {
 /// use temp_dir_builder::TempDirectoryBuilder;
 /// let temp_dir = TempDirectoryBuilder::default()
 ///     .add_text_file("test/foo.txt", "bar")
+///     .add_binary_file("test/foo2.txt", &[98u8, 97u8, 114u8])
 ///     .add_empty_file("test/folder-a/folder-b/bar.txt")
 ///     .add_file("test/file.rs", file!())
 ///     .add_directory("test/dir")
@@ -138,6 +139,12 @@ impl TempDirectoryBuilder {
         self.add(path, Kind::TextFile(text.to_string()))
     }
 
+    /// Adds a binary file specifying the content.
+    #[must_use]
+    pub fn add_binary_file(self, path: impl AsRef<Path>, content: &[u8]) -> Self {
+        self.add(path, Kind::BinaryFile(content.to_vec()))
+    }
+
     /// Adds a file specifying a source file to be copied.
     #[must_use]
     pub fn add_file(self, path: impl AsRef<Path>, file: impl AsRef<Path>) -> Self {
@@ -191,6 +198,14 @@ impl TempDirectoryBuilder {
                         .write_all(text.as_bytes())
                         .map_err(|err| CreateError::FailedToWriteFile(entry_path, err))?;
                 }
+                Kind::BinaryFile(bytes) => {
+                    let mut new_file = File::create(&entry_path)
+                        .map_err(|err| CreateError::FailedToCreateFile(entry_path.clone(), err))?;
+
+                    new_file
+                        .write_all(bytes)
+                        .map_err(|err| CreateError::FailedToWriteFile(entry_path, err))?;
+                }
                 Kind::FileToCopy(source_path) => {
                     std::fs::copy(source_path, &entry_path)
                         .map_err(|err| CreateError::FailedToCopyFile(source_path.clone(), err))?;
@@ -226,6 +241,7 @@ enum Kind {
     Directory,
     EmptyFile,
     TextFile(String),
+    BinaryFile(Vec<u8>),
     FileToCopy(PathBuf),
 }
 
@@ -263,6 +279,23 @@ mod tests {
         assert!(entry_path.exists());
 
         let content = std::fs::read_to_string(entry_path).expect("read text in foo.txt");
+
+        assert_eq!(content, expected_content);
+    }
+
+    #[test]
+    fn test_add_binary_file() {
+        let expected_content = [98u8, 97u8, 114u8];
+        let entry_name = "foo.txt";
+        let temp_dir = TempDirectoryBuilder::default()
+            .add_binary_file(entry_name, &expected_content)
+            .create()
+            .unwrap();
+        let entry_path = temp_dir.path().join(entry_name);
+
+        assert!(entry_path.exists());
+
+        let content = std::fs::read(entry_path).expect("read foo.txt");
 
         assert_eq!(content, expected_content);
     }

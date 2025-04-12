@@ -26,4 +26,4 @@ println!("created successfully in {}", temp_dir.path().display());
 <!-- </snip> -->
 
 ## Credits
-This is a fork of [tree-fs](https://github.com/kaplanelad/tree-fs) I heavily rewritten, original idea from Elad Kaplan.
+This is a fork of [tree-fs](https://github.com/kaplanelad/tree-fs) I heavily rewritten, original idea by Elad Kaplan.

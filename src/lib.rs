@@ -89,7 +89,7 @@ impl Default for TreeBuilder {
             files: vec![],
             override_file: false,
             root: temp_dir(),
-            drop: false,
+            drop: true,
         }
     }
 }

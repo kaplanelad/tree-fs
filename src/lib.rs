@@ -97,7 +97,7 @@ impl TempDirectoryBuilder {
     /// Sets the root folder where the tree will be created.  
     /// By default this is the temporary directory path returned by `std::env::temp_dir()`.
     #[must_use]
-    pub fn root_folder<P: AsRef<Path>>(mut self, dir: P) -> Self {
+    pub fn root_folder(mut self, dir: impl AsRef<Path>) -> Self {
         self.root = dir.as_ref().to_path_buf();
         self
     }
@@ -110,7 +110,6 @@ impl TempDirectoryBuilder {
         self
     }
 
-    /// Adds an entry.
     #[must_use]
     fn add(mut self, path: impl AsRef<Path>, kind: Kind) -> Self {
         self.entries.push(Entry {
@@ -121,18 +120,25 @@ impl TempDirectoryBuilder {
     }
 
     /// Adds an empty file.
+    /// * `path` - Path of the file to create. This path must be relative to the created directory. If the path is outside
+    ///   the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
     #[must_use]
     pub fn add_empty_file<P: AsRef<Path>>(self, path: P) -> Self {
         self.add(path, Kind::EmptyFile)
     }
 
     /// Adds a directory.
+    /// * `path` - Path of the directory to create. This path must be relative to the created directory.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
     #[must_use]
     pub fn add_directory(self, path: impl AsRef<Path>) -> Self {
         self.add(path, Kind::Directory)
     }
 
     /// Adds a text file specifying the content.
+    /// * `path` - Path of the text file to create. This path must be relative to the created directory.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    /// * `text` - Text to be written in the new file created.
     #[must_use]
     #[allow(clippy::needless_pass_by_value)]
     pub fn add_text_file(self, path: impl AsRef<Path>, text: impl ToString) -> Self {
@@ -140,12 +146,18 @@ impl TempDirectoryBuilder {
     }
 
     /// Adds a binary file specifying the content.
+    /// * `path` - Path of the binary file to create. This path must be relative to the created directory.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    /// * `content` - The bytes to be written in the new file created.
     #[must_use]
     pub fn add_binary_file(self, path: impl AsRef<Path>, content: &[u8]) -> Self {
         self.add(path, Kind::BinaryFile(content.to_vec()))
     }
 
     /// Adds a file specifying a source file to be copied.
+    /// * `path` - Path of the file to create. This path must be relative to the created directory.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    /// * `file` - Path of the file to be copied. This path must be absolute.
     #[must_use]
     pub fn add_file(self, path: impl AsRef<Path>, file: impl AsRef<Path>) -> Self {
         self.add(path, Kind::FileToCopy(file.as_ref().to_path_buf()))
@@ -153,11 +165,6 @@ impl TempDirectoryBuilder {
 
     /// Creates the file tree by generating files and directories based on the
     /// list of `Entry`s.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `std::io::Result` indicating success or failure in creating
-    /// the file tree.
     pub fn create(&self) -> Result<TempDirectory, CreateError> {
         if !self.root.exists() {
             std::fs::create_dir_all(&self.root)

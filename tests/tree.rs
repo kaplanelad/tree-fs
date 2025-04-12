@@ -5,7 +5,7 @@ use tree_fs::{Tree, TreeBuilder};
 #[test]
 fn can_create_tree_from_builder() {
     let tree_res = TreeBuilder::default()
-        .add("foo.txt", "foo")
+        .add_text("foo.txt", "foo")
         .add_empty("folder-a/folder-b/bar.txt")
         .create()
         .unwrap();
@@ -82,7 +82,7 @@ fn can_create_tree_from_yaml_str() {
 #[test]
 fn can_create_build_tree_with_drop() {
     let tree_fs = TreeBuilder::default()
-        .add("foo.txt", "foo")
+        .add_text("foo.txt", "foo")
         .add_empty("folder-a/folder-b/bar.txt")
         .drop(true)
         .create()

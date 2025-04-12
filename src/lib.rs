@@ -80,13 +80,19 @@ pub struct TreeBuilder {
     drop: bool,
 }
 
+#[derive(Debug, Deserialize)]
+enum Content {
+    Text(String),
+    File(PathBuf),
+}
+
 /// Represents metadata for a file in the tree.
 #[derive(Debug, Deserialize)]
-pub struct FileMetadata {
+struct FileMetadata {
     /// Path of the file relative to the root folder.
     pub path: PathBuf,
     /// Optional content to be written to the file.
-    pub content: Option<String>,
+    pub content: Option<Content>,
 }
 
 impl Default for TreeBuilder {
@@ -133,22 +139,30 @@ impl TreeBuilder {
 
     /// Adds a file with content to the tree.
     #[must_use]
-    pub fn add<P: AsRef<Path>>(mut self, path: P, content: &str) -> Self {
+    fn add<P: AsRef<Path>>(mut self, path: P, content: Option<Content>) -> Self {
         self.files.push(FileMetadata {
             path: path.as_ref().to_path_buf(),
-            content: Some(content.to_string()),
+            content,
         });
         self
     }
 
     /// Adds a file with a empty content.
     #[must_use]
-    pub fn add_empty<P: AsRef<Path>>(mut self, path: P) -> Self {
-        self.files.push(FileMetadata {
-            path: path.as_ref().to_path_buf(),
-            content: None,
-        });
-        self
+    pub fn add_empty<P: AsRef<Path>>(self, path: P) -> Self {
+        self.add(path, None)
+    }
+
+    /// Adds a file specifying a text content.
+    #[must_use]
+    pub fn add_text<P: AsRef<Path>>(self, path: P, text: impl ToString) -> Self {
+        self.add(path, Some(Content::Text(text.to_string())))
+    }
+
+    /// Adds a file specifying a source file to be copied.
+    #[must_use]
+    pub fn add_file<P: AsRef<Path>>(self, path: P, file: P) -> Self {
+        self.add(path, Some(Content::File(file.as_ref().to_path_buf())))
     }
 
     /// Creates the file tree by generating files and directories based on the specified metadata.
@@ -170,9 +184,18 @@ impl TreeBuilder {
                 std::fs::create_dir_all(parent_dir)?;
             }
 
-            let mut new_file = File::create(&dest_file)?;
-            if let Some(content) = &file.content {
-                new_file.write_all(content.as_bytes())?;
+            match &file.content {
+                None => {
+                    File::create(&dest_file)?;
+                },
+                Some(Content::Text(text)) => {
+                    let mut new_file = File::create(&dest_file)?;
+
+                    new_file.write_all(text.as_bytes())?;
+                },
+                Some(Content::File(source_path)) => {
+                    std::fs::copy(source_path, &dest_file)?;
+                },
             }
         }
 

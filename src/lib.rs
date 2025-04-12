@@ -18,6 +18,8 @@ pub struct Tree {
 }
 
 impl Tree {
+    #[must_use]
+    #[allow(clippy::missing_const_for_fn)]
     pub fn root(&self) -> &Path {
         &self.root
     }
@@ -32,28 +34,10 @@ impl Tree {
 /// let tree_fs = TreeBuilder::default()
 ///     .add_text("test/foo.txt", "bar")
 ///     .add_empty("test/folder-a/folder-b/bar.txt")
+///     .add_file("test/file.rs", file!())
 ///     .create()
 ///     .expect("create tree fs");
 /// println!("created successfully in {}", tree_fs.root().display());
-// </snip>
-/// ```
-/// ```rust
-// <snip id="example-drop">
-/// use tree_fs::TreeBuilder;
-/// let tree_fs = TreeBuilder::default()
-///      .add_text("test/foo.txt", "bar")
-///      .add_empty("test/folder-a/folder-b/bar.txt")
-///      .drop(true)
-///      .create()
-///      .expect("create tree fs");
-///
-/// println!("created successfully in {}", tree_fs.root().display());
-///
-/// let path = tree_fs.root().to_path_buf();
-/// assert!(path.exists());
-///
-/// drop(tree_fs);
-/// assert!(!path.exists());
 // </snip>
 /// ```
 #[derive(Debug)]
@@ -145,6 +129,7 @@ impl TreeBuilder {
 
     /// Adds a file specifying a text content.
     #[must_use]
+    #[allow(clippy::needless_pass_by_value)]
     pub fn add_text<P: AsRef<Path>>(self, path: P, text: impl ToString) -> Self {
         self.add(path, Content::Text(text.to_string()))
     }

@@ -15,22 +15,11 @@ When the `tree_fs` instance is dropped, the temporary folder and its contents ar
 ```rust
 use tree_fs::TreeBuilder;
 let tree_fs = TreeBuilder::default()
-    // Create a file foo.txt containing the text "bar".
     .add_text("test/foo.txt", "bar")
-    // Create an empty file bar.txt
     .add_empty("test/folder-a/folder-b/bar.txt")
-    // Copy a file (in this example it's the current file) into a file destination.rs
-    .add_file("destination.rs", file!())
+    .add_file("test/file.rs", file!())
     .create()
     .expect("create tree fs");
 println!("created successfully in {}", tree_fs.root().display());
-
- let path = tree_fs.root().to_path_buf();
- 
- assert!(path.exists());
-
- drop(tree_fs);
-
- assert!(!path.exists());
 ```
 <!-- </snip> -->

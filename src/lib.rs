@@ -43,6 +43,8 @@ pub enum CreateError {
     FailedToWriteFile(PathBuf, std::io::Error),
     #[error("The entry '{0}' is outside the temporary directory")]
     EntryOutsideDirectory(PathBuf),
+    #[error("The entry {0} has an empty name")]
+    EmptyEntryName(usize),
     #[error("The entry '{0}' is already existing")]
     DuplicateEntry(PathBuf),
 }
@@ -172,7 +174,11 @@ impl TempDirectoryBuilder {
                 .map_err(|err| CreateError::FailedToCreateRootDirectory(self.root.clone(), err))?;
         }
 
-        for entry in &self.entries {
+        for (entry_index, entry) in self.entries.iter().enumerate() {
+            if entry.path.as_os_str().is_empty() {
+                return Err(CreateError::EmptyEntryName(entry_index));
+            }
+
             let entry_path = self.root.join(&entry.path);
             let entry_path = std::path::absolute(entry_path)
                 .expect("make entry path absolute")
@@ -407,5 +413,13 @@ mod tests {
         let error = builder.create().unwrap_err();
 
         assert!(matches!(error, CreateError::EntryOutsideDirectory(..)));
+    }
+
+    #[test]
+    fn test_empty_entry_name() {
+        let builder = TempDirectoryBuilder::default().add_empty_file("");
+        let error = builder.create().unwrap_err();
+
+        assert!(matches!(error, CreateError::EmptyEntryName(0)));
     }
 }

@@ -28,7 +28,7 @@ impl TempDirectory {
 
 /// Error happening when creating the directory tree.
 #[derive(Debug, thiserror::Error)]
-pub enum CreateError {
+pub enum BuildError {
     #[error("Failed to create the root directory '{0}': {1}")]
     FailedToCreateRootDirectory(PathBuf, std::io::Error),
     #[error("Failed to create directory '{0}': {1}")]
@@ -62,7 +62,7 @@ pub enum CreateError {
 ///     .add_empty_file("test/folder-a/folder-b/bar.txt")
 ///     .add_file("test/file.rs", file!())
 ///     .add_directory("test/dir")
-///     .create()
+///     .build()
 ///     .expect("create temp dir");
 /// println!("created successfully in {}", temp_dir.path().display());
 // </snip>
@@ -124,7 +124,7 @@ impl TempDirectoryBuilder {
 
     /// Adds an empty file.
     /// * `path` - Path of the file to create. This path must be relative to the created directory. If the path is outside
-    ///   the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    ///   the created directory (e.g: "../foo") the error `BuildError::EntryOutsideDirectory` will be returned.
     #[must_use]
     pub fn add_empty_file<P: AsRef<Path>>(self, path: P) -> Self {
         self.add(path, Kind::EmptyFile)
@@ -132,7 +132,7 @@ impl TempDirectoryBuilder {
 
     /// Adds a directory.
     /// * `path` - Path of the directory to create. This path must be relative to the created directory.
-    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `BuildError::EntryOutsideDirectory` will be returned.
     #[must_use]
     pub fn add_directory(self, path: impl AsRef<Path>) -> Self {
         self.add(path, Kind::Directory)
@@ -140,7 +140,7 @@ impl TempDirectoryBuilder {
 
     /// Adds a text file specifying the content.
     /// * `path` - Path of the text file to create. This path must be relative to the created directory.
-    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `BuildError::EntryOutsideDirectory` will be returned.
     /// * `text` - Text to be written in the new file created.
     #[must_use]
     #[allow(clippy::needless_pass_by_value)]
@@ -150,7 +150,7 @@ impl TempDirectoryBuilder {
 
     /// Adds a binary file specifying the content.
     /// * `path` - Path of the binary file to create. This path must be relative to the created directory.
-    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `BuildError::EntryOutsideDirectory` will be returned.
     /// * `content` - The bytes to be written in the new file created.
     #[must_use]
     pub fn add_binary_file(self, path: impl AsRef<Path>, content: &[u8]) -> Self {
@@ -159,73 +159,73 @@ impl TempDirectoryBuilder {
 
     /// Adds a file specifying a source file to be copied.
     /// * `path` - Path of the file to create. This path must be relative to the created directory.
-    ///   If the path is outside the created directory (e.g: "../foo") the error `CreateError::EntryOutsideDirectory` will be returned.
+    ///   If the path is outside the created directory (e.g: "../foo") the error `BuildError::EntryOutsideDirectory` will be returned.
     /// * `file` - Path of the file to be copied. This path must be absolute.
     #[must_use]
     pub fn add_file(self, path: impl AsRef<Path>, file: impl AsRef<Path>) -> Self {
         self.add(path, Kind::FileToCopy(file.as_ref().to_path_buf()))
     }
 
-    /// Creates the file tree by generating files and directories based on the
+    /// Builds the file tree by generating files and directories based on the
     /// list of `Entry`s.
     ///
     /// # Errors
-    /// A `CreateError` is returned in case of error.
-    pub fn create(&self) -> Result<TempDirectory, CreateError> {
+    /// A `BuildError` is returned in case of error.
+    pub fn build(&self) -> Result<TempDirectory, BuildError> {
         if !self.root.exists() {
             std::fs::create_dir_all(&self.root)
-                .map_err(|err| CreateError::FailedToCreateRootDirectory(self.root.clone(), err))?;
+                .map_err(|err| BuildError::FailedToCreateRootDirectory(self.root.clone(), err))?;
         }
 
         for (entry_index, entry) in self.entries.iter().enumerate() {
             if entry.path.as_os_str().is_empty() {
-                return Err(CreateError::EmptyEntryName(entry_index));
+                return Err(BuildError::EmptyEntryName(entry_index));
             }
 
             let entry_path = self.root.join(&entry.path).clean();
 
             if !entry_path.starts_with(&self.root) {
-                return Err(CreateError::EntryOutsideDirectory(entry.path.clone()));
+                return Err(BuildError::EntryOutsideDirectory(entry.path.clone()));
             }
 
             if entry_path.exists() {
-                return Err(CreateError::DuplicateEntry(entry_path));
+                return Err(BuildError::DuplicateEntry(entry_path));
             }
 
             if let Some(parent_dir) = Path::new(&entry_path).parent() {
                 std::fs::create_dir_all(parent_dir).map_err(|err| {
-                    CreateError::FailedToCreateDirectory(parent_dir.to_path_buf(), err)
+                    BuildError::FailedToCreateDirectory(parent_dir.to_path_buf(), err)
                 })?;
             }
 
             match &entry.kind {
                 Kind::Directory => {
                     std::fs::create_dir(&entry_path)
-                        .map_err(|err| CreateError::FailedToCreateDirectory(entry_path, err))?;
+                        .map_err(|err| BuildError::FailedToCreateDirectory(entry_path, err))?;
                 }
                 Kind::EmptyFile => {
                     File::create(&entry_path)
-                        .map_err(|err| CreateError::FailedToCreateFile(entry_path, err))?;
+                        .map_err(|err| BuildError::FailedToCreateFile(entry_path, err))?;
                 }
                 Kind::TextFile(text) => {
                     let mut new_file = File::create(&entry_path)
-                        .map_err(|err| CreateError::FailedToCreateFile(entry_path.clone(), err))?;
+                        .map_err(|err| BuildError::FailedToCreateFile(entry_path.clone(), err))?;
 
                     new_file
                         .write_all(text.as_bytes())
-                        .map_err(|err| CreateError::FailedToWriteFile(entry_path, err))?;
+                        .map_err(|err| BuildError::FailedToWriteFile(entry_path, err))?;
                 }
                 Kind::BinaryFile(bytes) => {
                     let mut new_file = File::create(&entry_path)
-                        .map_err(|err| CreateError::FailedToCreateFile(entry_path.clone(), err))?;
+                        .map_err(|err| BuildError::FailedToCreateFile(entry_path.clone(), err))?;
 
                     new_file
                         .write_all(bytes)
-                        .map_err(|err| CreateError::FailedToWriteFile(entry_path, err))?;
+                        .map_err(|err| BuildError::FailedToWriteFile(entry_path, err))?;
                 }
                 Kind::FileToCopy(source_path) => {
                     std::fs::copy(source_path, &entry_path)
-                        .map_err(|err| CreateError::FailedToCopyFile(source_path.clone(), err))?;
+                        .map_err(|err| BuildError::FailedToCopyFile(source_path.clone(), err))?;
                 }
             }
         }
@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_temp_dir() {
-        let temp_dir = TempDirectoryBuilder::default().create().unwrap();
+        let temp_dir = TempDirectoryBuilder::default().build().unwrap();
 
         assert!(temp_dir.path().exists());
         assert!(temp_dir.path().is_dir());
@@ -289,7 +289,7 @@ mod tests {
         let entry_name = "foo.txt";
         let temp_dir = TempDirectoryBuilder::default()
             .add_text_file(entry_name, expected_content)
-            .create()
+            .build()
             .unwrap();
         let entry_path = temp_dir.path().join(entry_name);
 
@@ -306,7 +306,7 @@ mod tests {
         let entry_name = "foo.txt";
         let temp_dir = TempDirectoryBuilder::default()
             .add_binary_file(entry_name, &expected_content)
-            .create()
+            .build()
             .unwrap();
         let entry_path = temp_dir.path().join(entry_name);
 
@@ -322,7 +322,7 @@ mod tests {
         let entry_name = "empty_file.txt";
         let temp_dir = TempDirectoryBuilder::default()
             .add_empty_file(entry_name)
-            .create()
+            .build()
             .unwrap();
         let entry_path = temp_dir.path().join(entry_name);
 
@@ -338,7 +338,7 @@ mod tests {
         let entry_name = "empty_directory";
         let temp_dir = TempDirectoryBuilder::default()
             .add_directory(entry_name)
-            .create()
+            .build()
             .unwrap();
         let entry_path = temp_dir.path().join(entry_name);
 
@@ -352,7 +352,7 @@ mod tests {
         let source_file_path = file!();
         let temp_dir = TempDirectoryBuilder::default()
             .add_file(entry_name, source_file_path)
-            .create()
+            .build()
             .unwrap();
         let entry_path = temp_dir.path().join(entry_name);
 
@@ -367,7 +367,7 @@ mod tests {
 
     #[test]
     fn test_temp_dir_is_dropped() {
-        let temp_dir = TempDirectoryBuilder::default().create().unwrap();
+        let temp_dir = TempDirectoryBuilder::default().build().unwrap();
 
         let temp_dir_path = temp_dir.path().to_path_buf();
 
@@ -383,18 +383,18 @@ mod tests {
     fn test_entry_outside_temp_dir() {
         let path_outside_temp_dir = std::env::temp_dir().join("outside");
         let builder = TempDirectoryBuilder::default().add_empty_file(path_outside_temp_dir);
-        let error = builder.create().unwrap_err();
+        let error = builder.build().unwrap_err();
 
-        assert!(matches!(error, CreateError::EntryOutsideDirectory(_)));
+        assert!(matches!(error, BuildError::EntryOutsideDirectory(_)));
     }
 
     #[test]
     fn test_source_file_does_not_exists() {
         let source_file_path = std::env::temp_dir().join("not existing file");
         let builder = TempDirectoryBuilder::default().add_file("foo", source_file_path);
-        let error = builder.create().unwrap_err();
+        let error = builder.build().unwrap_err();
 
-        assert!(matches!(error, CreateError::FailedToCopyFile(..)));
+        assert!(matches!(error, BuildError::FailedToCopyFile(..)));
     }
 
     #[test]
@@ -402,24 +402,24 @@ mod tests {
         let builder = TempDirectoryBuilder::default()
             .add_empty_file("foo")
             .add_empty_file("foo");
-        let error = builder.create().unwrap_err();
+        let error = builder.build().unwrap_err();
 
-        assert!(matches!(error, CreateError::DuplicateEntry(..)));
+        assert!(matches!(error, BuildError::DuplicateEntry(..)));
     }
 
     #[test]
     fn test_entry_outside_directory() {
         let builder = TempDirectoryBuilder::default().add_empty_file("../foo");
-        let error = builder.create().unwrap_err();
+        let error = builder.build().unwrap_err();
 
-        assert!(matches!(error, CreateError::EntryOutsideDirectory(..)));
+        assert!(matches!(error, BuildError::EntryOutsideDirectory(..)));
     }
 
     #[test]
     fn test_empty_entry_name() {
         let builder = TempDirectoryBuilder::default().add_empty_file("");
-        let error = builder.create().unwrap_err();
+        let error = builder.build().unwrap_err();
 
-        assert!(matches!(error, CreateError::EmptyEntryName(0)));
+        assert!(matches!(error, BuildError::EmptyEntryName(0)));
     }
 }

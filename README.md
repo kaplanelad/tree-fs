@@ -20,7 +20,7 @@ let temp_dir = TempDirectoryBuilder::default()
     .add_empty_file("test/folder-a/folder-b/bar.txt")
     .add_file("test/file.rs", file!())
     .add_directory("test/dir")
-    .create()
+    .build()
     .expect("create temp dir");
 println!("created successfully in {}", temp_dir.path().display());
 ```

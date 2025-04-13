@@ -5,7 +5,7 @@ fn main() {
         .add_text_file("test/foo.txt", "bar")
         .add_empty_file("test/folder-a/folder-b/bar.txt")
         .add_file("test_file.rs", file!())
-        .create()
+        .build()
         .expect("create tree fs");
 
     println!(

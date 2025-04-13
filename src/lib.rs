@@ -7,6 +7,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use path_clean::PathClean;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
 /// Represents a temporary directory.  
@@ -172,11 +173,14 @@ impl TempDirectoryBuilder {
         }
 
         for entry in &self.entries {
-            if entry.path.is_absolute() && !entry.path.starts_with(&self.root) {
+            let entry_path = self.root.join(&entry.path);
+            let entry_path = std::path::absolute(entry_path)
+                .expect("make entry path absolute")
+                .clean();
+
+            if !entry_path.starts_with(&self.root) {
                 return Err(CreateError::EntryOutsideDirectory(entry.path.clone()));
             }
-
-            let entry_path = self.root.join(&entry.path);
 
             if entry_path.exists() {
                 return Err(CreateError::DuplicateEntry(entry_path));
@@ -395,5 +399,13 @@ mod tests {
         let error = builder.create().unwrap_err();
 
         assert!(matches!(error, CreateError::DuplicateEntry(..)));
+    }
+
+    #[test]
+    fn test_entry_outside_directory() {
+        let builder = TempDirectoryBuilder::default().add_empty_file("../foo");
+        let error = builder.create().unwrap_err();
+
+        assert!(matches!(error, CreateError::EntryOutsideDirectory(..)));
     }
 }

@@ -168,6 +168,9 @@ impl TempDirectoryBuilder {
 
     /// Creates the file tree by generating files and directories based on the
     /// list of `Entry`s.
+    ///
+    /// # Errors
+    /// A `CreateError` is returned in case of error.
     pub fn create(&self) -> Result<TempDirectory, CreateError> {
         if !self.root.exists() {
             std::fs::create_dir_all(&self.root)
@@ -179,10 +182,7 @@ impl TempDirectoryBuilder {
                 return Err(CreateError::EmptyEntryName(entry_index));
             }
 
-            let entry_path = self.root.join(&entry.path);
-            let entry_path = std::path::absolute(entry_path)
-                .expect("make entry path absolute")
-                .clean();
+            let entry_path = self.root.join(&entry.path).clean();
 
             if !entry_path.starts_with(&self.root) {
                 return Err(CreateError::EntryOutsideDirectory(entry.path.clone()));

@@ -51,7 +51,7 @@ jobs:
           tool: cargo-hack
       - run: cargo hack check --each-feature
 
-   test:
+  test:
     needs: [style]
     runs-on: ${{ matrix.os }}
     strategy:

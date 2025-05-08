@@ -1,6 +1,6 @@
 [package]
 name = "tree-fs"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 description = "Provides a convenient way to create a tree of files"
 authors = ["Elad Kaplan <kaplan.elad@gmail.com>"]
@@ -10,15 +10,27 @@ keywords = ["filesystem", "folders", "test", "assert"]
 license = "Apache-2.0"
 readme = "README.md"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
-default = ["yaml"]
+default = []
 
 yaml = ["dep:serde_yaml", "dep:thiserror"]
 
 [dependencies]
 serde = { version = "1.0.193", features = ["derive"] }
 serde_yaml = { version = "0.9.27", optional = true }
-thiserror = { version = "1.0.50", optional = true }
-rand = { version = "0.8.5" }
+thiserror = { version = "2.0", optional = true }
+rand = { version = "0.9.1" }
 
 [dev-dependencies]
+
+[[example]]
+name = "yaml-file"
+required-features = ["yaml"]
+
+[[example]]
+name = "yaml-str"
+required-features = ["yaml"]

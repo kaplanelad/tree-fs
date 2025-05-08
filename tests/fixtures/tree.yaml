@@ -1,8 +1,18 @@
 override_file: false
-files:
+entries:
   - path: foo.json
+    type: text_file
     content: |
       { "foo": "bar" }
   - path: folder/bar.yaml
+    type: text_file
     content: |
       foo: bar
+  - path: readonly_config.ini
+    type: text_file
+    content: |
+      ; Sample read-only INI file
+      [general]
+      setting = value
+    settings:
+      readonly: true

@@ -1,18 +1,22 @@
 use tree_fs::TreeBuilder;
 
 fn main() {
-    let tree_fs = TreeBuilder::default()
-        .add("test/foo.txt", "bar")
-        .add_empty("test/folder-a/folder-b/bar.txt")
+    let tree = TreeBuilder::default()
+        .add_file("temp_data/file.txt", "temporary content")
+        .add_empty_file("temp_data/another.tmp")
         .drop(true)
         .create()
-        .expect("create tree fs");
+        .expect("create tree fs for drop example");
 
-    println!("created successfully in {}", tree_fs.root.display());
+    println!("Temporary tree created at: {}", tree.root.display());
 
-    let path = tree_fs.root.clone();
-    assert!(path.exists());
+    let path_to_check = tree.root.clone();
+    assert!(path_to_check.exists(), "Directory should exist before drop");
 
-    drop(tree_fs);
-    assert!(!path.exists());
+    drop(tree);
+    assert!(
+        !path_to_check.exists(),
+        "Directory should be deleted after drop"
+    );
+    println!("Drop example: Temporary tree auto-deleted successfully.");
 }

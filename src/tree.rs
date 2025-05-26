@@ -14,7 +14,7 @@ pub struct Tree {
     /// Root folder where the tree will be created.
     pub root: PathBuf,
     /// Whether to automatically delete the temporary folder when dropped
-    pub(crate) drop: bool,
+    pub drop: bool,
 }
 
 impl Drop for Tree {
